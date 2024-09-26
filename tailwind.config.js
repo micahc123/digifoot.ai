@@ -1,3 +1,4 @@
+// tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -8,10 +9,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        primary: '#1e40af',
+        secondary: '#3b82f6',
+        accent: '#60a5fa',
+        background: '#0f172a',
+        surface: '#1e293b',
+        text: '#e2e8f0',
+      },
+      fontFamily: {
+        sans: ['Poppins', 'sans-serif'],
       },
     },
   },
-  plugins: [],
-};
+  plugins: [
+    require('@tailwindcss/aspect-ratio'),
+  ],
+}

@@ -9,9 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@tailwindcss/aspect-ratio": "^0.4.2",
+    "next": "14.2.13",
     "react": "^18",
     "react-dom": "^18",
-    "next": "14.2.13"
+    "three": "^0.168.0"
   },
   "devDependencies": {
     "postcss": "^8",
