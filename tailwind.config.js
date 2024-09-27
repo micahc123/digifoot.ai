@@ -1,4 +1,3 @@
-// tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -9,12 +8,12 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#1e40af',
-        secondary: '#3b82f6',
-        accent: '#60a5fa',
-        background: '#0f172a',
-        surface: '#1e293b',
-        text: '#e2e8f0',
+        primary: '#6d28d9',
+        secondary: '#8b5cf6',
+        accent: '#a78bfa',
+        background: '#0f0f0f',
+        surface: '#1f1f1f',
+        text: '#f3f4f6',
       },
       fontFamily: {
         sans: ['Poppins', 'sans-serif'],

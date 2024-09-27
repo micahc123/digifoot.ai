@@ -9,10 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@react-three/drei": "^9.114.0",
+    "@react-three/fiber": "^8.17.8",
     "@tailwindcss/aspect-ratio": "^0.4.2",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.8.0",
     "next": "14.2.13",
     "react": "^18",
     "react-dom": "^18",
+    "tailwind-merge": "^2.5.2",
     "three": "^0.168.0"
   },
   "devDependencies": {

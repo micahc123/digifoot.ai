@@ -1,4 +1,7 @@
+"use client";
 import { useState } from 'react';
+import { Input } from "./ui/input";
+import { Button } from "./ui/moving-border";
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState([]);
@@ -14,16 +17,15 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="glass-effect rounded-lg p-6">
-      <h3 className="text-2xl font-bold mb-4 text-gradient">AI Chat</h3>
-      <div className="h-96 overflow-y-auto mb-4 space-y-4">
+    <div className="w-full max-w-md mx-auto">
+      <div className="h-96 overflow-y-auto mb-4 space-y-4 p-4 rounded-lg bg-gray-800">
         {messages.map((message, index) => (
           <div
             key={index}
             className={`p-3 rounded-lg max-w-[80%] ${
               message.sender === 'user' 
-                ? 'bg-primary ml-auto animate-fade-in' 
-                : 'bg-secondary animate-float'
+                ? 'bg-blue-500 ml-auto' 
+                : 'bg-gray-700'
             }`}
           >
             {message.text}
@@ -31,19 +33,14 @@ export default function ChatInterface() {
         ))}
       </div>
       <form onSubmit={handleSubmit} className="flex">
-        <input
+        <Input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="flex-grow bg-surface rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-accent"
           placeholder="Ask about your digital footprint..."
+          className="flex-grow mr-2"
         />
-        <button
-          type="submit"
-          className="bg-accent hover:bg-accent-dark px-6 py-2 rounded-r-lg transition-colors"
-        >
-          Send
-        </button>
+        <Button type="submit">Send</Button>
       </form>
     </div>
   );
