@@ -9,10 +9,10 @@ export default function Navbar() {
             digifoot.ai
           </Link>
           <div className="flex space-x-6">
-            {['Dashboard', 'Analysis', 'Settings'].map((item) => (
+            {['Dashboard'].map((item) => (
               <Link 
                 key={item} 
-                href={`/${item.toLowerCase()}`} 
+                href={item === 'Dashboard' ? '/dashboard' : `/${item.toLowerCase().replace(' ', '-')}`}
                 className="text-text hover:text-accent transition-colors hover-scale"
               >
                 {item}
