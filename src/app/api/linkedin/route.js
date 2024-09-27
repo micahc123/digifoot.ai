@@ -2,8 +2,14 @@
 import { NextResponse } from 'next/server';
 import { Client } from '@linkedin/api-client';
 
-export async function GET() {
-  const accessToken = process.env.LINKEDIN_ACCESS_TOKEN;
+export async function GET(req) {
+  const apiKeys = JSON.parse(req.headers.get('x-api-key') || '{}');
+  const accessToken = apiKeys.LINKEDIN_ACCESS_TOKEN;
+
+  if (!accessToken) {
+    return NextResponse.json({ error: 'LinkedIn Access Token not provided' }, { status: 400 });
+  }
+
   const client = new Client(accessToken);
 
   try {

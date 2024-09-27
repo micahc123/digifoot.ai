@@ -2,13 +2,17 @@
 import { NextResponse } from 'next/server';
 import { Configuration, OpenAIApi } from 'openai';
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-const openai = new OpenAIApi(configuration);
-
 export async function POST(req) {
-  const { message, socialData } = await req.json();
+  const { message, socialData, apiKey } = await req.json();
+
+  if (!apiKey) {
+    return NextResponse.json({ error: 'OpenAI API key is not provided' }, { status: 400 });
+  }
+
+  const configuration = new Configuration({
+    apiKey: apiKey,
+  });
+  const openai = new OpenAIApi(configuration);
 
   try {
     const completion = await openai.createChatCompletion({
