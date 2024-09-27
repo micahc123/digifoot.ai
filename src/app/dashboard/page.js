@@ -1,18 +1,16 @@
 // src/app/dashboard/page.js
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaFacebook, FaTwitter, FaInstagram, FaLinkedin, FaTiktok, FaPlus } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaLinkedin, FaPlus } from 'react-icons/fa';
 import dynamic from 'next/dynamic';
 
 const ClientMetrics = dynamic(() => import('../../components/ClientMetrics'), { ssr: false });
 
 const socialIcons = {
   Facebook: FaFacebook,
-  Twitter: FaTwitter,
   Instagram: FaInstagram,
   LinkedIn: FaLinkedin,
-  TikTok: FaTiktok,
 };
 
 export default function Dashboard() {
@@ -20,19 +18,43 @@ export default function Dashboard() {
   const [chat, setChat] = useState([]);
   const [showAccountList, setShowAccountList] = useState(false);
   const [connectedAccounts, setConnectedAccounts] = useState([]);
+  const [socialData, setSocialData] = useState({});
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    const fetchSocialData = async () => {
+      for (const account of connectedAccounts) {
+        const response = await fetch(`/api/${account.toLowerCase()}`);
+        const data = await response.json();
+        setSocialData(prev => ({ ...prev, [account]: data }));
+      }
+    };
+
+    if (connectedAccounts.length > 0) {
+      fetchSocialData();
+    }
+  }, [connectedAccounts]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (message.trim()) {
       setChat([...chat, { text: message, sender: 'user' }]);
-      // Here you would typically send the message to your AI and get a response
-      setChat(prev => [...prev, { text: "AI response placeholder", sender: 'ai' }]);
+      
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, socialData }),
+      });
+      
+      const data = await response.json();
+      setChat(prev => [...prev, { text: data.response, sender: 'ai' }]);
       setMessage('');
     }
   };
 
-  const handleAddAccount = (account) => {
+  const handleAddAccount = async (account) => {
     if (!connectedAccounts.includes(account)) {
+      // Here you would typically initiate the OAuth flow
+      // For this example, we'll just add the account
       setConnectedAccounts([...connectedAccounts, account]);
     }
     setShowAccountList(false);
@@ -123,7 +145,7 @@ export default function Dashboard() {
         className="w-64 bg-surface p-6 space-y-6 overflow-y-auto"
       >
         <h2 className="text-2xl font-bold text-gradient">Digital Footprint</h2>
-        <ClientMetrics />
+        <ClientMetrics socialData={socialData} />
       </motion.div>
     </div>
   );
