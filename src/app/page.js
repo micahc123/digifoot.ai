@@ -132,21 +132,21 @@ export default function Home() {
               Get Started
             </motion.button>
           </Link>
-          <Link href="https://www.youtube.com/watch?v=ZFgjmsYqJyw" target="_blank" rel="noopener noreferrer" className="group">
-          <motion.span 
-            className="text-text group-hover:text-primary transition-colors duration-300 text-lg font-semibold flex items-center"
-            whileHover={{ x: 5 }}
-          >
-            Watch Demo 
-            <svg 
-              className="ml-2 w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
+          <Link href="/demo" className="group">
+            <motion.span 
+              className="text-text group-hover:text-primary transition-colors duration-300 text-lg font-semibold flex items-center"
+              whileHover={{ x: 5 }}
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-            </svg>
-          </motion.span>
+              Watch Demo 
+              <svg 
+                className="ml-2 w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </motion.span>
           </Link>
         </div>
         <motion.div
