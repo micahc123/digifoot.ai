@@ -16,7 +16,7 @@ module.exports = {
         text: '#f3f4f6',
       },
       fontFamily: {
-        sans: ['Poppins', 'sans-serif'],
+        sans: ['Inter'],
       },
     },
   },

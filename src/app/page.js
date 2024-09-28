@@ -113,22 +113,6 @@ const DigitalFootprintBackground = () => {
   );
 };
 
-const CoverComponent = ({ children }) => {
-  return (
-    <div className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-background opacity-80"></div>
-      <motion.div
-        initial={{ y: "100%" }}
-        animate={{ y: "0%" }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="relative z-10"
-      >
-        {children}
-      </motion.div>
-    </div>
-  );
-};
-
 const FeatureCard = ({ title, description, icon }) => {
   return (
     <motion.div
@@ -143,117 +127,91 @@ const FeatureCard = ({ title, description, icon }) => {
   );
 };
 
-const ParallaxSection = ({ children }) => {
-  const { scrollYProgress } = useScroll();
-  const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-
-  return (
-    <motion.div
-      style={{ y }}
-      className="relative z-10"
-    >
-      {children}
-    </motion.div>
-  );
-};
-
 export default function Home() {
   return (
     <div className="min-h-screen w-full bg-background text-text overflow-x-hidden">
       <DigitalFootprintBackground />
       
       <section className="min-h-screen flex flex-col items-center justify-center relative px-4">
-        <CoverComponent>
-          <motion.h1
-            initial={{ opacity: 0.5, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              delay: 0.3,
-              duration: 0.8,
-              ease: "easeInOut",
-            }}
-            className="text-gradient py-4 text-center text-4xl font-medium tracking-tight md:text-7xl"
-          >
-            <TypewriterText text="Discover Your Digital Footprint" />
-          </motion.h1>
-        </CoverComponent>
-        <div className="flex flex-col sm:flex-row items-center justify-center mt-10 z-10 space-y-4 sm:space-y-0 sm:space-x-6">
-          <Link href="/dashboard">
-            <motion.button 
-              className="px-6 py-3 rounded-full bg-primary text-text hover:bg-secondary transition-colors duration-300 text-lg font-semibold"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              Get Started
-            </motion.button>
-          </Link>
-          <Link href="https://www.youtube.com/watch?v=bAN3KmTSy2Q" className="group" target="_blank" rel="noopener noreferrer">
-            <motion.span 
-              className="text-text group-hover:text-primary transition-colors duration-300 text-lg font-semibold flex items-center"
-              whileHover={{ x: 5 }}
-            >
-              Watch Demo 
-              <svg 
-                className="ml-2 w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-              </svg>
-            </motion.span>
-          </Link>
-        </div>
         <motion.div
-          className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
-          animate={{ y: [0, 10, 0] }}
-          transition={{ repeat: Infinity, duration: 1.5 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="text-center"
         >
-          <svg className="w-6 h-6 text-text" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-            <path d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-          </svg>
+          <h1 className="text-5xl md:text-7xl font-bold mb-6">
+            <span className="text-primary">digifoot.ai</span>
+          </h1>
+          <h2 className="text-2xl md:text-4xl mb-8">
+            <TypewriterText text="Your AI-Powered Digital Footprint Analyzer" />
+          </h2>
+          <p className="text-xl md:text-2xl mb-12 max-w-2xl mx-auto">
+            Understand and optimize your online presence with cutting-edge AI technology 🚀
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+            <Link href="/dashboard">
+              <motion.button 
+                className="px-8 py-4 rounded-full bg-primary text-white hover:bg-secondary transition-colors duration-300 text-lg font-semibold"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Start Analyzing
+              </motion.button>
+            </Link>
+            <Link href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" className="group" target="_blank" rel="noopener noreferrer">
+              <motion.span 
+                className="text-primary group-hover:text-secondary transition-colors duration-300 text-lg font-semibold flex items-center"
+                whileHover={{ x: 5 }}
+              >
+                Watch Demo 
+                <svg 
+                  className="ml-2 w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </motion.span>
+            </Link>
+          </div>
         </motion.div>
       </section>
 
       <section className="py-20 px-4 bg-surface">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-4xl font-bold text-center mb-12">Chat with AI About Your Digital Presence</h2>
-          <div className="bg-background p-6 rounded-lg shadow-lg">
-            <div className="space-y-4">
-              <div className="flex items-start">
-                <div className="flex-shrink-0 bg-primary text-text rounded-full p-2">AI</div>
-                <div className="ml-3 bg-surface p-3 rounded-lg">
-                  <p>Based on your social media activity, it seems you're quite interested in technology and AI. Would you like to know more about how this affects your digital footprint?</p>
-                </div>
-              </div>
-              <div className="flex items-start justify-end">
-                <div className="mr-3 bg-primary p-3 rounded-lg">
-                  <p>Yes, I'd love to know more about that!</p>
-                </div>
-                <div className="flex-shrink-0 bg-text text-background rounded-full p-2">You</div>
-              </div>
-              <div className="flex items-start">
-                <div className="flex-shrink-0 bg-primary text-text rounded-full p-2">AI</div>
-                <div className="ml-3 bg-surface p-3 rounded-lg">
-                  <p>Great! Your interest in technology and AI is reflected in your frequent interactions with tech-related content. This shapes your digital identity as someone who's tech-savvy and forward-thinking. It could attract opportunities in these fields but also means your data might be more valuable to tech companies. Would you like tips on managing this aspect of your digital footprint?</p>
-                </div>
-              </div>
-            </div>
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-4xl font-bold text-center mb-12">Key Features</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <FeatureCard
+              title="AI-Powered Analysis"
+              description="Leverage advanced AI algorithms to analyze your digital footprint across multiple platforms."
+              icon="🤖"
+            />
+            <FeatureCard
+              title="Privacy-Focused"
+              description="Your data stays yours. We prioritize your privacy and security above all else."
+              icon="🔒"
+            />
+            <FeatureCard
+              title="Actionable Insights"
+              description="Get personalized recommendations to improve your online presence and protect your digital identity."
+              icon="💡"
+            />
           </div>
         </div>
       </section>
 
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-6">Ready to Explore Your Digital Footprint?</h2>
-          <p className="mb-8 text-xl">Gain valuable insights and take control of your online presence today.</p>
+          <h2 className="text-4xl font-bold mb-6">Ready to Take Control of Your Digital Footprint?</h2>
+          <p className="mb-8 text-xl">Join thousands of users who've already optimized their online presence with digifoot.ai</p>
           <Link href="/dashboard">
             <motion.button 
-              className="px-8 py-4 rounded-full bg-primary text-text hover:bg-secondary transition-colors duration-300 text-xl font-semibold"
+              className="px-8 py-4 rounded-full bg-primary text-white hover:bg-secondary transition-colors duration-300 text-xl font-semibold"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Start Your Journey
+              Get Started For Free
             </motion.button>
           </Link>
         </div>
