@@ -3,9 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaFacebook, FaInstagram, FaLinkedin, FaPlus } from 'react-icons/fa';
-import dynamic from 'next/dynamic';
-
-const ClientMetrics = dynamic(() => import('../../components/ClientMetrics'), { ssr: false });
+import ClientMetrics from '../../components/ClientMetrics';
 
 const socialIcons = {
   Facebook: FaFacebook,
@@ -19,45 +17,147 @@ export default function Dashboard() {
   const [showAccountList, setShowAccountList] = useState(false);
   const [connectedAccounts, setConnectedAccounts] = useState([]);
   const [socialData, setSocialData] = useState({});
+  const [accessTokens, setAccessTokens] = useState({});
+  
+  useEffect(() => {
+    const loadAccessTokens = () => {
+      const savedTokens = JSON.parse(localStorage.getItem('accessTokens') || '{}');
+      setAccessTokens(savedTokens);
+    };
+
+    loadAccessTokens();
+  }, []);
 
   useEffect(() => {
     const fetchSocialData = async () => {
       for (const account of connectedAccounts) {
-        const response = await fetch(`/api/${account.toLowerCase()}`);
-        const data = await response.json();
-        setSocialData(prev => ({ ...prev, [account]: data }));
+        if (account === 'Instagram') {
+          const accessToken = accessTokens.Instagram;
+          const response = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,timestamp&access_token=${accessToken}`);
+          const data = await response.json();
+          setSocialData(prev => ({ ...prev, Instagram: data.data }));
+        }
       }
     };
 
     if (connectedAccounts.length > 0) {
       fetchSocialData();
     }
-  }, [connectedAccounts]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (message.trim()) {
-      setChat([...chat, { text: message, sender: 'user' }]);
-      
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, socialData }),
-      });
-      
-      const data = await response.json();
-      setChat(prev => [...prev, { text: data.response, sender: 'ai' }]);
-      setMessage('');
-    }
-  };
+  }, [connectedAccounts, accessTokens]);
 
   const handleAddAccount = async (account) => {
-    if (!connectedAccounts.includes(account)) {
-      // Here you would typically initiate the OAuth flow
-      // For this example, we'll just add the account
+    if (account === 'Instagram') {
+      const redirectUri = 'YOUR_REDIRECT_URI'; // Replace with your redirect URI
+      const clientId = 'YOUR_CLIENT_ID'; // Replace with your client ID
+      const scope = 'user_profile,user_media'; // Required scopes
+      const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
+      
+      window.location.href = authUrl; // Redirect user for authorization
+    } else {
       setConnectedAccounts([...connectedAccounts, account]);
     }
     setShowAccountList(false);
+  };
+
+  // Exchange code for token and handle callback
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+      exchangeCodeForToken(code);
+    }
+  }, []);
+
+  const exchangeCodeForToken = async (code) => {
+    const response = await fetch('https://api.instagram.com/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: 'YOUR_CLIENT_ID',
+        client_secret: 'YOUR_CLIENT_SECRET',
+        grant_type: 'authorization_code',
+        redirect_uri: 'YOUR_REDIRECT_URI',
+        code: code,
+      }),
+    });
+    
+    const data = await response.json();
+    const accessToken = data.access_token;
+
+    // Fetch Instagram media posts after successful token exchange
+    const mediaResponse = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,timestamp&access_token=${accessToken}`);
+    const mediaData = await mediaResponse.json();
+    
+    setSocialData(prev => ({ ...prev, Instagram: mediaData.data }));
+    setAccessTokens(prev => ({ ...prev, Instagram: accessToken }));
+    localStorage.setItem('accessTokens', JSON.stringify({ ...accessTokens, Instagram: accessToken }));
+  };
+
+  // Handle asking about a post
+  const handleAskAboutPost = async (post) => {
+    const question = prompt("What do you want to ask about this post?");
+    
+    if (question) {
+      console.log("Asking about post:", post); // Debugging log
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: question,
+            socialData: { Instagram: [post] },
+            apiKey: process.env.OPENAI_API_KEY // Ensure you're sending the API key securely
+          }),
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        const data = await response.json();
+        console.log("AI Response:", data); // Log AI response
+        if (data.response) {
+          setChat(prev => [...prev, { text: data.response, sender: 'ai' }]);
+        } else {
+          console.error("No response from AI.");
+        }
+      } catch (error) {
+        console.error("Error asking about post:", error);
+      }
+    }
+  };
+
+  // Handle chat submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (message.trim()) {
+      const requestBody = {
+        message,
+        socialData,
+        // Do not include apiKey here; it will be accessed server-side
+      };
+  
+      console.log("Request Body:", requestBody); // Log the request body
+  
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+  
+      if (!response.ok) {
+        console.error("Error in API call:", response.statusText); // Log any errors
+        return;
+      }
+  
+      const data = await response.json();
+      
+      if (data.response) {
+        setChat(prev => [...prev, { text: message, sender: 'user' }, { text: data.response, sender: 'ai' }]);
+        setMessage('');
+      } else {
+        console.error("No response from AI.");
+      }
+    }
   };
 
   return (
@@ -110,6 +210,22 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Posts Area */}
+        <div className="flex-1 p-6 overflow-y-auto space-y-4">
+          {socialData.Instagram && socialData.Instagram.map(post => (
+            <div key={post.id} className="bg-surface p-4 rounded-lg shadow">
+              <img src={post.media_url} alt={post.caption} className="w-full h-auto rounded" />
+              <p>{post.caption}</p>
+              <button 
+                onClick={() => handleAskAboutPost(post)} 
+                className="mt-2 px-4 py-2 bg-primary text-white rounded hover:bg-secondary"
+              >
+                Ask AI about this post
+              </button>
+            </div>
+          ))}
+        </div>
+
         {/* Chat Area */}
         <div className="flex-1 p-6 overflow-y-auto">
           {chat.map((msg, index) => (
@@ -122,8 +238,8 @@ export default function Dashboard() {
         </div>
 
         {/* Input Area */}
-        <form onSubmit={handleSubmit} className="p-4 bg-surface">
-          <div className="flex space-x-2">
+        <form onSubmit={handleSubmit} className="p-4 bg-surface flex flex-col">
+          <div className="flex space-x-2 mb-4">
             <input
               type="text"
               value={message}
