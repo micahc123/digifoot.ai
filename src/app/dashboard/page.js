@@ -46,8 +46,8 @@ export default function Dashboard() {
 
   const handleAddAccount = async (account) => {
     if (account === 'Instagram') {
-      const redirectUri = 'YOUR_REDIRECT_URI';
-      const clientId = 'YOUR_CLIENT_ID';
+      const redirectUri = 'https://localhost:3000/dashboard';
+      const clientId = '1211078713493610';
       const scope = 'user_profile,user_media';
       const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
       
@@ -71,10 +71,10 @@ export default function Dashboard() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        client_id: 'YOUR_CLIENT_ID',
-        client_secret: 'YOUR_CLIENT_SECRET',
+        client_id: '1211078713493610',
+        client_secret: '33a02c6cefc7a1fd6ab8fce7dfd799b3',
         grant_type: 'authorization_code',
-        redirect_uri: 'YOUR_REDIRECT_URI',
+        redirect_uri: redirectUri,
         code: code,
       }),
     });

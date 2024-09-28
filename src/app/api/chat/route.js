@@ -1,14 +1,9 @@
-// app/api/chat/route.js
 import { NextResponse } from 'next/server';
-import OpenAI from 'openai'; // Correct import statement
+import OpenAI from 'openai';
 
 export async function POST(req) {
   const { message, socialData } = await req.json();
-  const apiKey = process.env.OPENAI_API_KEY; // Accessing the API key
-
-  console.log("Received message:", message); // Log received message
-  console.log("Received social data:", socialData); // Log social data
-  console.log("API Key:", apiKey); // Log API key for debugging
+  const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
     return NextResponse.json({ error: 'OpenAI API key is not provided' }, { status: 400 });
@@ -31,7 +26,6 @@ export async function POST(req) {
   } catch (error) {
     console.error('Error calling OpenAI:', error);
     
-    // Handle rate limit error specifically
     if (error.code === 'insufficient_quota') {
       return NextResponse.json({ error: 'You have exceeded your quota for the OpenAI API.' }, { status: 429 });
     }
