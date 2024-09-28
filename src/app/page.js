@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
 
@@ -25,34 +25,90 @@ const TypewriterText = ({ text }) => {
   );
 };
 
-const SpotlightBackground = () => {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+const DigitalFootprintBackground = () => {
+  const canvasRef = useRef(null);
 
   useEffect(() => {
-    const handleMouseMove = (e) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const nodes = [];
+    const nodeCount = 50;
+
+    for (let i = 0; i < nodeCount; i++) {
+      nodes.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 3 + 2,
+        color: `rgba(${Math.floor(Math.random() * 100 + 155)}, ${Math.floor(Math.random() * 100 + 155)}, ${Math.floor(Math.random() * 100 + 155)}, 0.7)`,
+        velocity: {
+          x: (Math.random() - 0.5) * 1,
+          y: (Math.random() - 0.5) * 1
+        }
+      });
+    }
+
+    const drawNodes = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      nodes.forEach((node, index) => {
+        node.x += node.velocity.x;
+        node.y += node.velocity.y;
+
+        if (node.x < 0 || node.x > canvas.width) node.velocity.x *= -1;
+        if (node.y < 0 || node.y > canvas.height) node.velocity.y *= -1;
+
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+        ctx.fillStyle = node.color;
+        ctx.fill();
+
+        ctx.font = '10px Arial';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.fillText('Data', node.x - 10, node.y - 10);
+
+        nodes.forEach((otherNode, otherIndex) => {
+          if (index !== otherIndex) {
+            const dx = node.x - otherNode.x;
+            const dy = node.y - otherNode.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance < 150) {
+              ctx.beginPath();
+              ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 - distance / 1500})`;
+              ctx.lineWidth = 0.5;
+              ctx.moveTo(node.x, node.y);
+              ctx.lineTo(otherNode.x, otherNode.y);
+              ctx.stroke();
+            }
+          }
+        });
+      });
+
+      animationFrameId = requestAnimationFrame(drawNodes);
+    };
+
+    drawNodes();
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('resize', resizeCanvas);
+      cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
   return (
-    <div 
-      className="spotlight"
-      style={{
-        background: `radial-gradient(circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0) 80%)`,
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        pointerEvents: 'none',
-        zIndex: 1,
-      }}
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 w-full h-full pointer-events-none z-0"
     />
   );
 };
@@ -60,7 +116,7 @@ const SpotlightBackground = () => {
 const CoverComponent = ({ children }) => {
   return (
     <div className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-background"></div>
+      <div className="absolute inset-0 bg-background opacity-80"></div>
       <motion.div
         initial={{ y: "100%" }}
         animate={{ y: "0%" }}
@@ -104,9 +160,8 @@ const ParallaxSection = ({ children }) => {
 export default function Home() {
   return (
     <div className="min-h-screen w-full bg-background text-text overflow-x-hidden">
-      <SpotlightBackground />
+      <DigitalFootprintBackground />
       
-      {/* Hero Section */}
       <section className="min-h-screen flex flex-col items-center justify-center relative px-4">
         <CoverComponent>
           <motion.h1
@@ -132,7 +187,7 @@ export default function Home() {
               Get Started
             </motion.button>
           </Link>
-          <Link href="/demo" className="group">
+          <Link href="https://www.youtube.com/watch?v=bAN3KmTSy2Q" className="group" target="_blank" rel="noopener noreferrer">
             <motion.span 
               className="text-text group-hover:text-primary transition-colors duration-300 text-lg font-semibold flex items-center"
               whileHover={{ x: 5 }}
@@ -160,7 +215,6 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* AI Chat Preview Section */}
       <section className="py-20 px-4 bg-surface">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl font-bold text-center mb-12">Chat with AI About Your Digital Presence</h2>
@@ -189,7 +243,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-6">Ready to Explore Your Digital Footprint?</h2>
