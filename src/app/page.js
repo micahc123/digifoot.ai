@@ -51,7 +51,7 @@ const SpotlightBackground = () => {
         width: '100vw',
         height: '100vh',
         pointerEvents: 'none',
-        zIndex: 1, // Ensure the spotlight is behind other content
+        zIndex: 1,
       }}
     />
   );
@@ -122,7 +122,7 @@ export default function Home() {
             <TypewriterText text="Discover Your Digital Footprint" />
           </motion.h1>
         </CoverComponent>
-        <div className="flex flex-col items-center justify-center mt-10 z-10">
+        <div className="flex flex-col sm:flex-row items-center justify-center mt-10 z-10 space-y-4 sm:space-y-0 sm:space-x-6">
           <Link href="/dashboard">
             <motion.button 
               className="px-6 py-3 rounded-full bg-primary text-text hover:bg-secondary transition-colors duration-300 text-lg font-semibold"
@@ -131,6 +131,22 @@ export default function Home() {
             >
               Get Started
             </motion.button>
+          </Link>
+          <Link href="https://www.youtube.com/watch?v=ZFgjmsYqJyw" target="_blank" rel="noopener noreferrer" className="group">
+          <motion.span 
+            className="text-text group-hover:text-primary transition-colors duration-300 text-lg font-semibold flex items-center"
+            whileHover={{ x: 5 }}
+          >
+            Watch Demo 
+            <svg 
+              className="ml-2 w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+          </motion.span>
           </Link>
         </div>
         <motion.div
