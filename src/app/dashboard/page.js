@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaFacebook, FaInstagram, FaLinkedin, FaPlus } from 'react-icons/fa';
-import ClientMetrics from '../../components/ClientMetrics';
 
 const socialIcons = {
   Facebook: FaFacebook,
@@ -47,19 +46,18 @@ export default function Dashboard() {
 
   const handleAddAccount = async (account) => {
     if (account === 'Instagram') {
-      const redirectUri = 'YOUR_REDIRECT_URI'; // Replace with your redirect URI
-      const clientId = 'YOUR_CLIENT_ID'; // Replace with your client ID
-      const scope = 'user_profile,user_media'; // Required scopes
+      const redirectUri = 'YOUR_REDIRECT_URI';
+      const clientId = 'YOUR_CLIENT_ID';
+      const scope = 'user_profile,user_media';
       const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
       
-      window.location.href = authUrl; // Redirect user for authorization
+      window.location.href = authUrl;
     } else {
       setConnectedAccounts([...connectedAccounts, account]);
     }
     setShowAccountList(false);
   };
 
-  // Exchange code for token and handle callback
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
@@ -84,7 +82,6 @@ export default function Dashboard() {
     const data = await response.json();
     const accessToken = data.access_token;
 
-    // Fetch Instagram media posts after successful token exchange
     const mediaResponse = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,timestamp&access_token=${accessToken}`);
     const mediaData = await mediaResponse.json();
     
@@ -93,12 +90,10 @@ export default function Dashboard() {
     localStorage.setItem('accessTokens', JSON.stringify({ ...accessTokens, Instagram: accessToken }));
   };
 
-  // Handle asking about a post
   const handleAskAboutPost = async (post) => {
     const question = prompt("What do you want to ask about this post?");
     
     if (question) {
-      console.log("Asking about post:", post); // Debugging log
       try {
         const response = await fetch('/api/chat', {
           method: 'POST',
@@ -106,14 +101,12 @@ export default function Dashboard() {
           body: JSON.stringify({
             message: question,
             socialData: { Instagram: [post] },
-            apiKey: process.env.OPENAI_API_KEY // Ensure you're sending the API key securely
           }),
         });
 
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const data = await response.json();
-        console.log("AI Response:", data); // Log AI response
         if (data.response) {
           setChat(prev => [...prev, { text: data.response, sender: 'ai' }]);
         } else {
@@ -125,7 +118,6 @@ export default function Dashboard() {
     }
   };
 
-  // Handle chat submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -133,10 +125,7 @@ export default function Dashboard() {
       const requestBody = {
         message,
         socialData,
-        // Do not include apiKey here; it will be accessed server-side
       };
-  
-      console.log("Request Body:", requestBody); // Log the request body
   
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -145,7 +134,7 @@ export default function Dashboard() {
       });
   
       if (!response.ok) {
-        console.error("Error in API call:", response.statusText); // Log any errors
+        console.error("Error in API call:", response.statusText);
         return;
       }
   
@@ -161,14 +150,13 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen pt-16 bg-background text-text">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-background text-text">
       <motion.div 
         initial={{ x: -300 }}
         animate={{ x: 0 }}
-        className="w-64 bg-surface p-6 space-y-6 overflow-y-auto"
+        className="w-64 bg-surface p-6 space-y-6 overflow-y-auto h-full"
       >
-        <h2 className="text-2xl font-bold text-gradient">Connected Accounts</h2>
+        <h2 className="text-2xl font-bold text-gradient">Digital Assistant</h2>
         <button 
           onClick={() => setShowAccountList(!showAccountList)}
           className="flex items-center space-x-2 w-full p-2 rounded-lg bg-primary hover:bg-secondary transition-colors"
@@ -208,14 +196,12 @@ export default function Dashboard() {
         )}
       </motion.div>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Posts Area */}
         <div className="flex-1 p-6 overflow-y-auto space-y-4">
           {socialData.Instagram && socialData.Instagram.map(post => (
             <div key={post.id} className="bg-surface p-4 rounded-lg shadow">
               <img src={post.media_url} alt={post.caption} className="w-full h-auto rounded" />
-              <p>{post.caption}</p>
+              <p className="mt-2">{post.caption}</p>
               <button 
                 onClick={() => handleAskAboutPost(post)} 
                 className="mt-2 px-4 py-2 bg-primary text-white rounded hover:bg-secondary"
@@ -226,7 +212,6 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Chat Area */}
         <div className="flex-1 p-6 overflow-y-auto">
           {chat.map((msg, index) => (
             <div key={index} className={`mb-4 ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>
@@ -237,9 +222,8 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Input Area */}
-        <form onSubmit={handleSubmit} className="p-4 bg-surface flex flex-col">
-          <div className="flex space-x-2 mb-4">
+        <form onSubmit={handleSubmit} className="p-4 bg-surface">
+          <div className="flex space-x-2">
             <input
               type="text"
               value={message}
@@ -253,16 +237,6 @@ export default function Dashboard() {
           </div>
         </form>
       </div>
-
-      {/* Metrics Sidebar */}
-      <motion.div 
-        initial={{ x: 300 }}
-        animate={{ x: 0 }}
-        className="w-64 bg-surface p-6 space-y-6 overflow-y-auto"
-      >
-        <h2 className="text-2xl font-bold text-gradient">Digital Footprint</h2>
-        <ClientMetrics socialData={socialData} />
-      </motion.div>
     </div>
   );
 }
