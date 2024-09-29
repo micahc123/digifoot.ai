@@ -27,7 +27,7 @@ export default function Navbar() {
 
   const handleMouseMove = (e) => {
     if (isDashboard) {
-      setIsVisible(e.clientY < 100);
+      setIsVisible(e.clientY < 60);
     }
   };
 
@@ -37,25 +37,25 @@ export default function Navbar() {
   }, [isDashboard]);
 
   return (
-    <div className="fixed top-0 left-0 w-full z-50 px-6 py-6">
+    <div className="fixed top-0 left-0 w-full z-50 px-4 py-3">
       <AnimatePresence>
         {isVisible && (
           <motion.nav
-            className={`max-w-7xl mx-auto rounded-full backdrop-blur-md transition-all duration-300 ${
-              isScrolled ? 'bg-background/80 shadow-lg' : 'bg-transparent'
+            className={`max-w-5xl mx-auto rounded-full backdrop-blur-md transition-all duration-300 ${
+              isScrolled ? 'bg-background/90 shadow-md' : 'bg-transparent'
             }`}
-            initial={{ y: -100, opacity: 0 }}
+            initial={{ y: -60, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -100, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            exit={{ y: -60, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
           >
-            <div className="flex items-center justify-between px-12 py-4">
-              <Link href="/" className="text-3xl font-bold text-primary hover:text-secondary transition-colors">
+            <div className="flex items-center justify-between px-6 py-2">
+              <Link href="/" className="text-2xl font-bold text-primary hover:text-secondary transition-colors">
                 digifoot.ai
               </Link>
               <Link href="/dashboard">
                 <motion.button 
-                  className="px-8 py-3 rounded-full bg-primary text-white hover:bg-secondary transition-all duration-300 shadow-md hover:shadow-lg text-lg font-semibold"
+                  className="px-4 py-2 rounded-full bg-primary text-white hover:bg-secondary transition-all duration-300 shadow-sm hover:shadow-md text-sm font-medium"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
