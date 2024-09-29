@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaFacebook, FaInstagram, FaLinkedin, FaPlus } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaLinkedin, FaPlus, FaPaperPlane } from 'react-icons/fa';
 
 const socialIcons = {
   Facebook: FaFacebook,
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [connectedAccounts, setConnectedAccounts] = useState([]);
   const [socialData, setSocialData] = useState({});
   const [accessTokens, setAccessTokens] = useState({});
+  const [hoveredAccount, setHoveredAccount] = useState(null);
   
   useEffect(() => {
     const loadAccessTokens = () => {
@@ -255,7 +256,6 @@ export default function Dashboard() {
     e.preventDefault();
     
     if (message.trim()) {
-      // Add user message to chat immediately
       setChat(prev => [...prev, { text: message, sender: 'user' }]);
       
       const requestBody = {
@@ -280,93 +280,130 @@ export default function Dashboard() {
           setChat(prev => [...prev, { text: data.response, sender: 'ai' }]);
         } else {
           console.error("No response from AI.");
-          // Add a default AI response if no response is received
           setChat(prev => [...prev, { text: "I'm sorry, I couldn't process that request.", sender: 'ai' }]);
         }
       } catch (error) {
         console.error("Error in API call:", error);
-        // Add an error message to the chat
         setChat(prev => [...prev, { text: "Sorry, there was an error processing your request.", sender: 'ai' }]);
       }
       
-      // Clear the input field
       setMessage('');
     }
   };
 
+  const getAccountStats = (account) => {
+    if (account.name === 'Instagram' && socialData.Instagram) {
+      return {
+        username: socialData.Instagram.username,
+        postsCount: socialData.Instagram.posts.length,
+        bio: socialData.Instagram.bio,
+      };
+    } else if (account.name === 'Facebook' && socialData.Facebook) {
+      return {
+        name: socialData.Facebook.name,
+        postsCount: socialData.Facebook.posts.length,
+      };
+    }
+    return null;
+  };
+
   return (
-    <div className="flex h-screen bg-gray-900 text-gray-100">
-      <motion.div 
-        initial={{ x: -300 }}
-        animate={{ x: 0 }}
-        className="w-64 bg-gray-800 p-6 space-y-6 overflow-y-auto h-full shadow-lg"
-      >
-        <h2 className="text-2xl font-bold text-indigo-400">digifoot.ai</h2>
-        <button 
-          onClick={() => setShowAccountList(!showAccountList)}
-          className="flex items-center space-x-2 w-full p-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+    <div className="flex flex-col h-screen bg-gray-900 text-gray-100">
+      <header className="bg-gray-800 p-4 shadow-md">
+        <h1 className="text-2xl font-bold text-indigo-400">digifoot.ai</h1>
+      </header>
+      
+      <div className="flex-1 flex overflow-hidden">
+        <motion.aside 
+          initial={{ x: -300 }}
+          animate={{ x: 0 }}
+          className="w-64 bg-gray-800 p-4 overflow-y-auto shadow-lg"
         >
-          <FaPlus className="text-xl" />
-          <span>Add Account</span>
-        </button>
-        
-        {showAccountList && (
-          <div className="mt-4 max-h-40 overflow-y-auto">
-            {Object.entries(socialIcons).map(([name, Icon]) => (
-              <button 
-                key={name} 
-                className="flex items-center space-x-2 w-full p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors mb-2"
-                onClick={() => handleAddAccount(name)}
-              >
-                <Icon className="text-xl text-indigo-400" />
-                <span>{name}</span>
-              </button>
+          <button 
+            onClick={() => setShowAccountList(!showAccountList)}
+            className="flex items-center justify-center space-x-2 w-full p-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors mb-4"
+          >
+            <FaPlus className="text-xl" />
+            <span>Add Account</span>
+          </button>
+          
+          {showAccountList && (
+            <div className="mb-4 space-y-2">
+              {Object.entries(socialIcons).map(([name, Icon]) => (
+                <button 
+                  key={name} 
+                  className="flex items-center space-x-2 w-full p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
+                  onClick={() => handleAddAccount(name)}
+                >
+                  <Icon className="text-xl text-indigo-400" />
+                  <span>{name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {connectedAccounts.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Connected Accounts:</h3>
+              {connectedAccounts.map((account) => {
+                const Icon = socialIcons[account.name];
+                const stats = getAccountStats(account);
+                return (
+                  <div 
+                    key={account.name} 
+                    className="relative flex items-center space-x-2 w-full p-2 rounded-lg bg-gray-700 mb-2 hover:bg-gray-600 transition-colors"
+                    onMouseEnter={() => setHoveredAccount(account.name)}
+                    onMouseLeave={() => setHoveredAccount(null)}
+                  >
+                    <Icon className="text-xl text-indigo-400" />
+                    <div className="flex-1">
+                      <span className="font-medium">{account.name}</span>
+                      {account.username && <span className="text-sm text-gray-400 block">@{account.username}</span>}
+                    </div>
+                    
+                    {hoveredAccount === account.name && stats && (
+                      <div className="absolute left-full ml-2 p-3 bg-gray-800 rounded-lg shadow-lg z-30 w-48">
+                        <h4 className="font-bold mb-2">{account.name} Stats</h4>
+                        {stats.username && <p>Username: @{stats.username}</p>}
+                        {stats.name && <p>Name: {stats.name}</p>}
+                        <p>Posts: {stats.postsCount}</p>
+                        {stats.bio && <p className="mt-2 text-sm">{stats.bio}</p>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </motion.aside>
+
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 p-4 overflow-y-auto bg-gray-800">
+            {chat.map((msg, index) => (
+              <div key={index} className={`mb-4 ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>
+                <span className={`inline-block p-2 rounded-lg ${msg.sender === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-100'}`}>
+                  {msg.text}
+                </span>
+              </div>
             ))}
           </div>
-        )}
 
-        {connectedAccounts.length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-lg font-semibold mb-2">Connected:</h3>
-            {connectedAccounts.map((account) => {
-              const Icon = socialIcons[account.name];
-              return (
-                <div key={account.name} className="flex items-center space-x-2 w-full p-2 rounded-lg bg-gray-700 mb-2">
-                  <Icon className="text-xl text-indigo-400" />
-                  <span className="font-medium">{account.name}</span>
-                  {account.username && <span className="text-sm text-gray-400 font-mono">@{account.username}</span>}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </motion.div>
-
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <div className="flex-1 p-6 overflow-y-auto bg-gray-800">
-          {chat.map((msg, index) => (
-            <div key={index} className={`mb-4 ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>
-              <span className={`inline-block p-2 rounded-lg ${msg.sender === 'user' ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-100'}`}>
-                {msg.text}
-              </span>
+          <form onSubmit={handleSubmit} className="p-4 bg-gray-800 shadow-lg">
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Ask about your digital footprint..."
+                className="flex-1 p-2 rounded-lg border border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-600"
+              />
+              <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center">
+                <FaPaperPlane className="mr-2" />
+                Send
+              </button>
             </div>
-          ))}
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-4 bg-gray-800 shadow-lg">
-          <div className="flex space-x-2">
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Ask about your digital footprint..."
-              className="flex-1 p-2 rounded-lg border border-gray-600 bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-600"
-            />
-            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-              Send
-            </button>
-          </div>
-        </form>
+          </form>
+        </main>
       </div>
     </div>
   );
