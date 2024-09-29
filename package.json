@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google-cloud/vision": "^4.3.2",
     "@react-three/drei": "^9.114.0",
     "@react-three/fiber": "^8.17.8",
     "@tabler/icons-react": "^3.19.0",
@@ -20,6 +21,7 @@
     "framer-motion": "^11.9.0",
     "fs": "^0.0.1-security",
     "next": "14.2.13",
+    "node-fetch": "^3.3.2",
     "openai": "^4.65.0",
     "react": "^18",
     "react-dom": "^18",
