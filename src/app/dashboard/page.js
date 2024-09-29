@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { FaFacebook, FaInstagram, FaLinkedin, FaPlus, FaPaperPlane } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FaFacebook, FaInstagram, FaLinkedin, FaPlus, FaPaperPlane, FaTimes } from 'react-icons/fa';
 
 const socialIcons = {
   Facebook: FaFacebook,
@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [socialData, setSocialData] = useState({});
   const [accessTokens, setAccessTokens] = useState({});
   const [hoveredAccount, setHoveredAccount] = useState(null);
+  const [selectedAccount, setSelectedAccount] = useState(null);
   
   useEffect(() => {
     const loadAccessTokens = () => {
@@ -68,7 +69,7 @@ export default function Dashboard() {
 
   const fetchInstagramData = async (accessToken) => {
     try {
-      const response = await fetch(`https://graph.instagram.com/me?fields=id,username,media{id,caption,media_type,media_url,timestamp}&access_token=${accessToken}`);
+      const response = await fetch(`https://graph.instagram.com/me?fields=id,username,media{id,caption,media_type,media_url,timestamp},followers_count,follows_count&access_token=${accessToken}`);
       const data = await response.json();
       if (data && data.username) {
         const newSocialData = {
@@ -76,7 +77,10 @@ export default function Dashboard() {
           Instagram: {
             username: data.username,
             posts: data.media?.data || [],
-            bio: data.biography || ''
+            bio: data.biography || '',
+            followers: data.followers_count,
+            following: data.follows_count,
+            profileImage: data.profile_picture_url || '',
           }
         };
         setSocialData(newSocialData);
@@ -92,7 +96,7 @@ export default function Dashboard() {
 
   const fetchFacebookData = async (accessToken) => {
     try {
-      const response = await fetch(`https://graph.facebook.com/me?fields=id,name,posts{message,created_time,full_picture}&access_token=${accessToken}`);
+      const response = await fetch(`https://graph.facebook.com/me?fields=id,name,posts{message,created_time,full_picture},friends,picture&access_token=${accessToken}`);
       const data = await response.json();
       if (data && data.name) {
         const newSocialData = {
@@ -100,6 +104,8 @@ export default function Dashboard() {
           Facebook: {
             name: data.name,
             posts: data.posts?.data || [],
+            friends: data.friends?.summary?.total_count || 0,
+            profileImage: data.picture?.data?.url || '',
           }
         };
         setSocialData(newSocialData);
@@ -144,7 +150,7 @@ export default function Dashboard() {
     } else if (account === 'Facebook' && !connectedAccounts.find(acc => acc.name === 'Facebook')) {
       const redirectUri = 'https://localhost:3000/dashboard';
       const clientId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
-      const scope = 'public_profile,user_posts';
+      const scope = 'public_profile,user_posts,user_friends';
       const authUrl = `https://www.facebook.com/v12.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=facebook`;
       
       window.location.href = authUrl;
@@ -194,7 +200,7 @@ export default function Dashboard() {
   };
 
   const handleInstagramAuth = async (accessToken) => {
-    const userResponse = await fetch(`https://graph.instagram.com/me?fields=id,username,media{id,caption,media_type,media_url,timestamp}&access_token=${accessToken}`);
+    const userResponse = await fetch(`https://graph.instagram.com/me?fields=id,username,media{id,caption,media_type,media_url,timestamp},followers_count,follows_count&access_token=${accessToken}`);
     const userData = await userResponse.json();
     
     if (userData && userData.username) {
@@ -203,7 +209,10 @@ export default function Dashboard() {
         Instagram: {
           username: userData.username,
           posts: userData.media?.data || [],
-          bio: userData.biography || ''
+          bio: userData.biography || '',
+          followers: userData.followers_count,
+          following: userData.follows_count,
+          profileImage: userData.profile_picture_url || '',
         }
       };
       setSocialData(newSocialData);
@@ -224,7 +233,7 @@ export default function Dashboard() {
   };
 
   const handleFacebookAuth = async (accessToken) => {
-    const userResponse = await fetch(`https://graph.facebook.com/me?fields=id,name,posts{message,created_time,full_picture}&access_token=${accessToken}`);
+    const userResponse = await fetch(`https://graph.facebook.com/me?fields=id,name,posts{message,created_time,full_picture},friends,picture&access_token=${accessToken}`);
     const userData = await userResponse.json();
     
     if (userData && userData.name) {
@@ -233,6 +242,8 @@ export default function Dashboard() {
         Facebook: {
           name: userData.name,
           posts: userData.posts?.data || [],
+          friends: userData.friends?.summary?.total_count || 0,
+          profileImage: userData.picture?.data?.url || '',
         }
       };
       setSocialData(newSocialData);
@@ -293,16 +304,9 @@ export default function Dashboard() {
 
   const getAccountStats = (account) => {
     if (account.name === 'Instagram' && socialData.Instagram) {
-      return {
-        username: socialData.Instagram.username,
-        postsCount: socialData.Instagram.posts.length,
-        bio: socialData.Instagram.bio,
-      };
+      return socialData.Instagram;
     } else if (account.name === 'Facebook' && socialData.Facebook) {
-      return {
-        name: socialData.Facebook.name,
-        postsCount: socialData.Facebook.posts.length,
-      };
+      return socialData.Facebook;
     }
     return null;
   };
@@ -347,29 +351,19 @@ export default function Dashboard() {
               <h3 className="text-lg font-semibold mb-2">Connected Accounts:</h3>
               {connectedAccounts.map((account) => {
                 const Icon = socialIcons[account.name];
-                const stats = getAccountStats(account);
                 return (
                   <div 
                     key={account.name} 
-                    className="relative flex items-center space-x-2 w-full p-2 rounded-lg bg-gray-700 mb-2 hover:bg-gray-600 transition-colors"
+                    className="relative flex items-center space-x-2 w-full p-2 rounded-lg bg-gray-700 mb-2 hover:bg-gray-600 transition-colors cursor-pointer"
                     onMouseEnter={() => setHoveredAccount(account.name)}
                     onMouseLeave={() => setHoveredAccount(null)}
+                    onClick={() => setSelectedAccount(account)}
                   >
                     <Icon className="text-xl text-indigo-400" />
                     <div className="flex-1">
                       <span className="font-medium">{account.name}</span>
                       {account.username && <span className="text-sm text-gray-400 block">@{account.username}</span>}
                     </div>
-                    
-                    {hoveredAccount === account.name && stats && (
-                      <div className="absolute left-full ml-2 p-3 bg-gray-800 rounded-lg shadow-lg z-30 w-48">
-                        <h4 className="font-bold mb-2">{account.name} Stats</h4>
-                        {stats.username && <p>Username: @{stats.username}</p>}
-                        {stats.name && <p>Name: {stats.name}</p>}
-                        <p>Posts: {stats.postsCount}</p>
-                        {stats.bio && <p className="mt-2 text-sm">{stats.bio}</p>}
-                      </div>
-                    )}
                   </div>
                 );
               })}
@@ -405,6 +399,85 @@ export default function Dashboard() {
           </form>
         </main>
       </div>
+
+      <AnimatePresence>
+        {selectedAccount && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={() => setSelectedAccount(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full m-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-indigo-400">{selectedAccount.name} Stats</h2>
+                <button onClick={() => setSelectedAccount(null)} className="text-gray-400 hover:text-white">
+                  <FaTimes />
+                </button>
+              </div>
+              
+              {getAccountStats(selectedAccount) ? (
+                <div className="space-y-4">
+                  {selectedAccount.name === 'Instagram' && (
+                    <>
+                      <div className="flex items-center space-x-4">
+                        <img src={socialData.Instagram.profileImage} alt={socialData.Instagram.username} className="w-16 h-16 rounded-full" />
+                        <div>
+                          <p className="font-semibold text-lg">@{socialData.Instagram.username}</p>
+                          <p className="text-gray-400">{socialData.Instagram.bio}</p>
+                        </div>
+                      </div>
+                      <div className="flex justify-around text-center">
+                        <div>
+                          <p className="font-bold text-xl">{socialData.Instagram.posts.length}</p>
+                          <p className="text-gray-400">Posts</p>
+                        </div>
+                        <div>
+                          <p className="font-bold text-xl">{socialData.Instagram.followers}</p>
+                          <p className="text-gray-400">Followers</p>
+                        </div>
+                        <div>
+                          <p className="font-bold text-xl">{socialData.Instagram.following}</p>
+                          <p className="text-gray-400">Following</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  {selectedAccount.name === 'Facebook' && (
+                    <>
+                      <div className="flex items-center space-x-4">
+                        <img src={socialData.Facebook.profileImage} alt={socialData.Facebook.name} className="w-16 h-16 rounded-full" />
+                        <div>
+                          <p className="font-semibold text-lg">{socialData.Facebook.name}</p>
+                        </div>
+                      </div>
+                      <div className="flex justify-around text-center">
+                        <div>
+                          <p className="font-bold text-xl">{socialData.Facebook.posts.length}</p>
+                          <p className="text-gray-400">Posts</p>
+                        </div>
+                        <div>
+                          <p className="font-bold text-xl">{socialData.Facebook.friends}</p>
+                          <p className="text-gray-400">Friends</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <p className="text-gray-400">No data available for this account.</p>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
