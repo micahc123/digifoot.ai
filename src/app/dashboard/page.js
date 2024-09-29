@@ -255,6 +255,9 @@ export default function Dashboard() {
     e.preventDefault();
     
     if (message.trim()) {
+      // Add user message to chat immediately
+      setChat(prev => [...prev, { text: message, sender: 'user' }]);
+      
       const requestBody = {
         message,
         socialData,
@@ -274,14 +277,20 @@ export default function Dashboard() {
         const data = await response.json();
         
         if (data.response) {
-          setChat(prev => [...prev, { text: message, sender: 'user' }, { text: data.response, sender: 'ai' }]);
-          setMessage('');
+          setChat(prev => [...prev, { text: data.response, sender: 'ai' }]);
         } else {
           console.error("No response from AI.");
+          // Add a default AI response if no response is received
+          setChat(prev => [...prev, { text: "I'm sorry, I couldn't process that request.", sender: 'ai' }]);
         }
       } catch (error) {
         console.error("Error in API call:", error);
+        // Add an error message to the chat
+        setChat(prev => [...prev, { text: "Sorry, there was an error processing your request.", sender: 'ai' }]);
       }
+      
+      // Clear the input field
+      setMessage('');
     }
   };
 
@@ -292,7 +301,7 @@ export default function Dashboard() {
         animate={{ x: 0 }}
         className="w-64 bg-gray-800 p-6 space-y-6 overflow-y-auto h-full shadow-lg"
       >
-        <h2 className="text-2xl font-bold text-indigo-400">Digital Assistant</h2>
+        <h2 className="text-2xl font-bold text-indigo-400">digifoot.ai</h2>
         <button 
           onClick={() => setShowAccountList(!showAccountList)}
           className="flex items-center space-x-2 w-full p-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
