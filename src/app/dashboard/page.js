@@ -33,13 +33,20 @@ export default function Dashboard() {
       setConnectedAccounts(savedAccounts);
     };
 
+    const loadSocialData = () => {
+      const savedSocialData = JSON.parse(localStorage.getItem('socialData') || '{}');
+      setSocialData(savedSocialData);
+    };
+
     loadAccessTokens();
     loadConnectedAccounts();
+    loadSocialData();
 
     const handleKeyPress = (event) => {
       if (event.shiftKey && event.ctrlKey && event.key.toLowerCase() === 'u') {
         localStorage.removeItem('accessTokens');
         localStorage.removeItem('connectedAccounts');
+        localStorage.removeItem('socialData');
         setAccessTokens({});
         setConnectedAccounts([]);
         setSocialData({});
@@ -56,9 +63,9 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchSocialData = async () => {
       for (const account of connectedAccounts) {
-        if (account.name === 'Instagram') {
+        if (account.name === 'Instagram' && !socialData.Instagram) {
           await fetchInstagramData(accessTokens.Instagram);
-        } else if (account.name === 'Facebook') {
+        } else if (account.name === 'Facebook' && !socialData.Facebook) {
           await fetchFacebookData(accessTokens.Facebook);
         }
       }
@@ -86,6 +93,7 @@ export default function Dashboard() {
           }
         };
         setSocialData(newSocialData);
+        localStorage.setItem('socialData', JSON.stringify(newSocialData));
         
         await sendDataToServer(newSocialData);
       } else {
@@ -111,6 +119,7 @@ export default function Dashboard() {
           }
         };
         setSocialData(newSocialData);
+        localStorage.setItem('socialData', JSON.stringify(newSocialData));
         
         await sendDataToServer(newSocialData);
       } else {
@@ -218,6 +227,7 @@ export default function Dashboard() {
         }
       };
       setSocialData(newSocialData);
+      localStorage.setItem('socialData', JSON.stringify(newSocialData));
       setAccessTokens(prev => ({ ...prev, Instagram: accessToken }));
       localStorage.setItem('accessTokens', JSON.stringify({ ...accessTokens, Instagram: accessToken }));
       
@@ -249,6 +259,7 @@ export default function Dashboard() {
         }
       };
       setSocialData(newSocialData);
+      localStorage.setItem('socialData', JSON.stringify(newSocialData));
       setAccessTokens(prev => ({ ...prev, Facebook: accessToken }));
       localStorage.setItem('accessTokens', JSON.stringify({ ...accessTokens, Facebook: accessToken }));
       
@@ -526,22 +537,18 @@ export default function Dashboard() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-indigo-400">Your Posts</h2>
+                <h2 className="text-2xl font-bold text-indigo-400">All Posts</h2>
                 <button onClick={() => setShowPosts(false)} className="text-gray-400 hover:text-white">
                   <FaTimes />
                 </button>
               </div>
-              
               <div className="space-y-4">
                 {getAllPosts().map((post, index) => (
                   <div key={index} className="bg-gray-700 p-4 rounded-lg">
-                    {post.media_url && (
-                      <img src={post.media_url} alt="Post" className="w-full h-48 object-cover rounded-lg mb-2" />
-                    )}
-                    <p className="text-gray-300">{post.caption || post.message}</p>
-                    <p className="text-gray-400 text-sm mt-2">
-                      {new Date(post.created_time || post.timestamp).toLocaleString()}
-                    </p>
+                    <p className="text-sm text-gray-400 mb-2">{new Date(post.created_time || post.timestamp).toLocaleString()}</p>
+                    <p>{post.message || post.caption}</p>
+                    {post.full_picture && <img src={post.full_picture} alt="Post" className="mt-2 rounded-lg" />}
+                    {post.media_url && <img src={post.media_url} alt="Post" className="mt-2 rounded-lg" />}
                   </div>
                 ))}
               </div>

@@ -158,7 +158,7 @@ export default function Home() {
                 Start Analyzing
               </motion.button>
             </Link>
-            <Link href="https://www.youtube.com/watch?v=dQw4w9WgXcQ" className="group" target="_blank" rel="noopener noreferrer">
+            <Link href="https://www.youtube.com/watch?v=bAN3KmTSy2Q" className="group" target="_blank" rel="noopener noreferrer">
               <motion.span 
                 className="text-primary group-hover:text-secondary transition-colors duration-300 text-lg font-semibold flex items-center"
                 whileHover={{ x: 5 }}
@@ -204,7 +204,6 @@ export default function Home() {
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-6">Ready to Take Control of Your Digital Footprint?</h2>
-          <p className="mb-8 text-xl">Join thousands of users who've already optimized their online presence with digifoot.ai</p>
           <Link href="/dashboard">
             <motion.button 
               className="px-8 py-4 rounded-full bg-primary text-white hover:bg-secondary transition-colors duration-300 text-xl font-semibold"
