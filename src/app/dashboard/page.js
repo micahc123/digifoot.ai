@@ -32,15 +32,20 @@ export default function Dashboard() {
     loadAccessTokens();
     loadConnectedAccounts();
 
-    const clearLocalStorage = () => {
-      localStorage.removeItem('accessTokens');
-      localStorage.removeItem('connectedAccounts');
+    const handleKeyPress = (event) => {
+      if (event.shiftKey && event.ctrlKey && event.key.toLowerCase() === 'u') {
+        localStorage.removeItem('accessTokens');
+        localStorage.removeItem('connectedAccounts');
+        setAccessTokens({});
+        setConnectedAccounts([]);
+        setSocialData({});
+      }
     };
 
-    window.addEventListener('beforeunload', clearLocalStorage);
+    window.addEventListener('keydown', handleKeyPress);
 
     return () => {
-      window.removeEventListener('beforeunload', clearLocalStorage);
+      window.removeEventListener('keydown', handleKeyPress);
     };
   }, []);
 
@@ -48,28 +53,9 @@ export default function Dashboard() {
     const fetchSocialData = async () => {
       for (const account of connectedAccounts) {
         if (account.name === 'Instagram') {
-          const accessToken = accessTokens.Instagram;
-          try {
-            const response = await fetch(`https://graph.instagram.com/me?fields=id,username,media{id,caption,media_type,media_url,timestamp}&access_token=${accessToken}`);
-            const data = await response.json();
-            if (data && data.username) {
-              const newSocialData = {
-                ...socialData,
-                Instagram: {
-                  username: data.username,
-                  posts: data.media?.data || [],
-                  bio: data.biography || ''
-                }
-              };
-              setSocialData(newSocialData);
-              
-              await sendDataToServer(newSocialData);
-            } else {
-              console.error("Invalid data structure received from Instagram API", data);
-            }
-          } catch (error) {
-            console.error("Error fetching Instagram data:", error);
-          }
+          await fetchInstagramData(accessTokens.Instagram);
+        } else if (account.name === 'Facebook') {
+          await fetchFacebookData(accessTokens.Facebook);
         }
       }
     };
@@ -78,6 +64,53 @@ export default function Dashboard() {
       fetchSocialData();
     }
   }, [connectedAccounts, accessTokens]);
+
+  const fetchInstagramData = async (accessToken) => {
+    try {
+      const response = await fetch(`https://graph.instagram.com/me?fields=id,username,media{id,caption,media_type,media_url,timestamp}&access_token=${accessToken}`);
+      const data = await response.json();
+      if (data && data.username) {
+        const newSocialData = {
+          ...socialData,
+          Instagram: {
+            username: data.username,
+            posts: data.media?.data || [],
+            bio: data.biography || ''
+          }
+        };
+        setSocialData(newSocialData);
+        
+        await sendDataToServer(newSocialData);
+      } else {
+        console.error("Invalid data structure received from Instagram API", data);
+      }
+    } catch (error) {
+      console.error("Error fetching Instagram data:", error);
+    }
+  };
+
+  const fetchFacebookData = async (accessToken) => {
+    try {
+      const response = await fetch(`https://graph.facebook.com/me?fields=id,name,posts{message,created_time,full_picture}&access_token=${accessToken}`);
+      const data = await response.json();
+      if (data && data.name) {
+        const newSocialData = {
+          ...socialData,
+          Facebook: {
+            name: data.name,
+            posts: data.posts?.data || [],
+          }
+        };
+        setSocialData(newSocialData);
+        
+        await sendDataToServer(newSocialData);
+      } else {
+        console.error("Invalid data structure received from Facebook API", data);
+      }
+    } catch (error) {
+      console.error("Error fetching Facebook data:", error);
+    }
+  };
 
   const sendDataToServer = async (data) => {
     try {
@@ -107,10 +140,16 @@ export default function Dashboard() {
       const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&response_type=code`;
       
       window.location.href = authUrl;
+    } else if (account === 'Facebook' && !connectedAccounts.find(acc => acc.name === 'Facebook')) {
+      const redirectUri = 'https://localhost:3000/dashboard';
+      const clientId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
+      const scope = 'public_profile,user_posts';
+      const authUrl = `https://www.facebook.com/v12.0/dialog/oauth?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=facebook`;
+      
+      window.location.href = authUrl;
     } else if (!connectedAccounts.find(acc => acc.name === account)) {
-      const newConnectedAccounts = [...connectedAccounts, { name: account, username: null }];
-      setConnectedAccounts(newConnectedAccounts);
-      localStorage.setItem('connectedAccounts', JSON.stringify(newConnectedAccounts));
+      setConnectedAccounts(prevAccounts => [...prevAccounts, { name: account, username: null }]);
+      localStorage.setItem('connectedAccounts', JSON.stringify([...connectedAccounts, { name: account, username: null }]));
     }
     setShowAccountList(false);
   };
@@ -118,14 +157,17 @@ export default function Dashboard() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
+    const state = urlParams.get('state');
     if (code) {
-      exchangeCodeForToken(code);
+      exchangeCodeForToken(code, state);
     }
   }, []);
 
-  const exchangeCodeForToken = async (code) => {
+  const exchangeCodeForToken = async (code, state) => {
     try {
-      const response = await fetch('/api/instagram-auth', {
+      const platform = state === 'facebook' ? 'facebook' : 'instagram';
+      
+      const response = await fetch(`/api/${platform}-auth`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code }),
@@ -138,64 +180,74 @@ export default function Dashboard() {
       const data = await response.json();
       const accessToken = data.accessToken;
 
-      const userResponse = await fetch(`https://graph.instagram.com/me?fields=id,username,media{id,caption,media_type,media_url,timestamp}&access_token=${accessToken}`);
-      const userData = await userResponse.json();
-      
-      if (userData && userData.username) {
-        const newSocialData = {
-          ...socialData,
-          Instagram: {
-            username: userData.username,
-            posts: userData.media?.data || [],
-            bio: userData.biography || ''
-          }
-        };
-        setSocialData(newSocialData);
-        setAccessTokens(prev => ({ ...prev, Instagram: accessToken }));
-        localStorage.setItem('accessTokens', JSON.stringify({ ...accessTokens, Instagram: accessToken }));
-        
-        const newConnectedAccounts = connectedAccounts.filter(acc => acc.name !== 'Instagram');
-        newConnectedAccounts.push({ name: 'Instagram', username: userData.username });
-        setConnectedAccounts(newConnectedAccounts);
-        localStorage.setItem('connectedAccounts', JSON.stringify(newConnectedAccounts));
-
-        await sendDataToServer(newSocialData);
-
-        // Clear the URL parameters after successful authentication
-        window.history.replaceState({}, document.title, "/dashboard");
-      } else {
-        console.error("Invalid user data received from Instagram API", userData);
+      if (platform === 'instagram') {
+        await handleInstagramAuth(accessToken);
+      } else if (platform === 'facebook') {
+        await handleFacebookAuth(accessToken);
       }
+
+      window.history.replaceState({}, document.title, "/dashboard");
     } catch (error) {
       console.error("Error exchanging code for token:", error);
     }
   };
 
-  const handleAskAboutPost = async (post) => {
-    const question = prompt("What do you want to ask about this post?");
+  const handleInstagramAuth = async (accessToken) => {
+    const userResponse = await fetch(`https://graph.instagram.com/me?fields=id,username,media{id,caption,media_type,media_url,timestamp}&access_token=${accessToken}`);
+    const userData = await userResponse.json();
     
-    if (question) {
-      try {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: question,
-            socialData: { Instagram: { posts: [post], username: socialData.Instagram?.username, bio: socialData.Instagram?.bio } },
-          }),
-        });
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-        const data = await response.json();
-        if (data.response) {
-          setChat(prev => [...prev, { text: data.response, sender: 'ai' }]);
-        } else {
-          console.error("No response from AI.");
+    if (userData && userData.username) {
+      const newSocialData = {
+        ...socialData,
+        Instagram: {
+          username: userData.username,
+          posts: userData.media?.data || [],
+          bio: userData.biography || ''
         }
-      } catch (error) {
-        console.error("Error asking about post:", error);
-      }
+      };
+      setSocialData(newSocialData);
+      setAccessTokens(prev => ({ ...prev, Instagram: accessToken }));
+      localStorage.setItem('accessTokens', JSON.stringify({ ...accessTokens, Instagram: accessToken }));
+      
+      setConnectedAccounts(prevAccounts => {
+        const newAccounts = prevAccounts.filter(acc => acc.name !== 'Instagram');
+        newAccounts.push({ name: 'Instagram', username: userData.username });
+        localStorage.setItem('connectedAccounts', JSON.stringify(newAccounts));
+        return newAccounts;
+      });
+
+      await sendDataToServer(newSocialData);
+    } else {
+      console.error("Invalid user data received from Instagram API", userData);
+    }
+  };
+
+  const handleFacebookAuth = async (accessToken) => {
+    const userResponse = await fetch(`https://graph.facebook.com/me?fields=id,name,posts{message,created_time,full_picture}&access_token=${accessToken}`);
+    const userData = await userResponse.json();
+    
+    if (userData && userData.name) {
+      const newSocialData = {
+        ...socialData,
+        Facebook: {
+          name: userData.name,
+          posts: userData.posts?.data || [],
+        }
+      };
+      setSocialData(newSocialData);
+      setAccessTokens(prev => ({ ...prev, Facebook: accessToken }));
+      localStorage.setItem('accessTokens', JSON.stringify({ ...accessTokens, Facebook: accessToken }));
+      
+      setConnectedAccounts(prevAccounts => {
+        const newAccounts = prevAccounts.filter(acc => acc.name !== 'Facebook');
+        newAccounts.push({ name: 'Facebook', username: userData.name });
+        localStorage.setItem('connectedAccounts', JSON.stringify(newAccounts));
+        return newAccounts;
+      });
+
+      await sendDataToServer(newSocialData);
+    } else {
+      console.error("Invalid user data received from Facebook API", userData);
     }
   };
 
@@ -282,21 +334,6 @@ export default function Dashboard() {
       </motion.div>
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <div className="flex-1 p-6 overflow-y-auto space-y-4">
-          {socialData.Instagram && socialData.Instagram.posts && socialData.Instagram.posts.map(post => (
-            <div key={post.id} className="bg-gray-800 p-4 rounded-lg shadow-md">
-              <img src={post.media_url} alt={post.caption} className="w-full h-auto rounded-lg" />
-              <p className="mt-2 text-gray-300">{post.caption}</p>
-              <button 
-                onClick={() => handleAskAboutPost(post)} 
-                className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                Ask AI about this post
-              </button>
-            </div>
-          ))}
-        </div>
-
         <div className="flex-1 p-6 overflow-y-auto bg-gray-800">
           {chat.map((msg, index) => (
             <div key={index} className={`mb-4 ${msg.sender === 'user' ? 'text-right' : 'text-left'}`}>

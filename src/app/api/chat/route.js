@@ -14,7 +14,7 @@ export async function POST(req) {
   });
 
   try {
-    const systemMessage = "You are a helpful assistant that provides insights about a user's digital presence based on their social media data. You have access to their username, posts, and bio from Instagram.";
+    const systemMessage = "You are a helpful assistant that provides insights about a user's digital presence based on their social media data. You have access to their username, posts, and bio from Instagram and Facebook.";
     
     let userMessage = `Here's my social media data: ${JSON.stringify(socialData)}. `;
     
@@ -23,6 +23,12 @@ export async function POST(req) {
       userMessage += `My Instagram username is ${instagramData.username}. `;
       userMessage += `My Instagram bio is: ${instagramData.bio}. `;
       userMessage += `Here are my Instagram posts: ${JSON.stringify(instagramData.posts)}. `;
+    }
+    
+    if (socialData.Facebook) {
+      const facebookData = socialData.Facebook;
+      userMessage += `My Facebook name is ${facebookData.name}. `;
+      userMessage += `Here are my Facebook posts: ${JSON.stringify(facebookData.posts)}. `;
     }
     
     userMessage += message;
