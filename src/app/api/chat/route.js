@@ -18,18 +18,16 @@ export async function POST(req) {
     
     let userMessage = `Here's my social media data: ${JSON.stringify(socialData)}. `;
     
-    if (socialData.Instagram) {
-      const instagramData = socialData.Instagram;
-      userMessage += `My Instagram username is ${instagramData.username}. `;
-      userMessage += `My Instagram bio is: ${instagramData.bio}. `;
-      userMessage += `Here are my Instagram posts: ${JSON.stringify(instagramData.posts)}. `;
-    }
-    
-    if (socialData.Facebook) {
-      const facebookData = socialData.Facebook;
-      userMessage += `My Facebook name is ${facebookData.name}. `;
-      userMessage += `Here are my Facebook posts: ${JSON.stringify(facebookData.posts)}. `;
-    }
+    const instagramData = socialData.Instagram;
+    userMessage += `My Instagram username is ${instagramData.username}. `;
+    userMessage += `My Instagram bio is: ${instagramData.bio}. `;
+    userMessage += `Here are my Instagram posts: ${JSON.stringify(instagramData.posts)}. `;
+  
+  
+    const facebookData = socialData.Facebook;
+    userMessage += `My Facebook name is ${facebookData.name}. `;
+    userMessage += `Here are my Facebook posts: ${JSON.stringify(facebookData.posts)}. `;
+  
     
     userMessage += message;
 
