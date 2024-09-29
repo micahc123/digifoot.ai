@@ -14,11 +14,24 @@ export async function POST(req) {
   });
 
   try {
+    const systemMessage = "You are a helpful assistant that provides insights about a user's digital presence based on their social media data. You have access to their username, posts, and bio from Instagram.";
+    
+    let userMessage = `Here's my social media data: ${JSON.stringify(socialData)}. `;
+    
+    if (socialData.Instagram) {
+      const instagramData = socialData.Instagram;
+      userMessage += `My Instagram username is ${instagramData.username}. `;
+      userMessage += `My Instagram bio is: ${instagramData.bio}. `;
+      userMessage += `Here are my Instagram posts: ${JSON.stringify(instagramData.posts)}. `;
+    }
+    
+    userMessage += message;
+
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "You are a helpful assistant that provides insights about a user's digital presence based on their social media data." },
-        { role: "user", content: `Here's my social media data: ${JSON.stringify(socialData)}. ${message}` }
+        { role: "system", content: systemMessage },
+        { role: "user", content: userMessage }
       ],
     });
 

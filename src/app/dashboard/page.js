@@ -1,4 +1,5 @@
-"use client";
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaFacebook, FaInstagram, FaLinkedin, FaPlus } from 'react-icons/fa';
@@ -30,6 +31,17 @@ export default function Dashboard() {
 
     loadAccessTokens();
     loadConnectedAccounts();
+
+    const clearLocalStorage = () => {
+      localStorage.removeItem('accessTokens');
+      localStorage.removeItem('connectedAccounts');
+    };
+
+    window.addEventListener('beforeunload', clearLocalStorage);
+
+    return () => {
+      window.removeEventListener('beforeunload', clearLocalStorage);
+    };
   }, []);
 
   useEffect(() => {
@@ -37,17 +49,55 @@ export default function Dashboard() {
       for (const account of connectedAccounts) {
         if (account.name === 'Instagram') {
           const accessToken = accessTokens.Instagram;
-          const response = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,timestamp&access_token=${accessToken}`);
-          const data = await response.json();
-          setSocialData(prev => ({ ...prev, Instagram: data.data }));
+          try {
+            const response = await fetch(`https://graph.instagram.com/me?fields=id,username,media{id,caption,media_type,media_url,timestamp}&access_token=${accessToken}`);
+            const data = await response.json();
+            if (data && data.username) {
+              const newSocialData = {
+                ...socialData,
+                Instagram: {
+                  username: data.username,
+                  posts: data.media?.data || [],
+                  bio: data.biography || ''
+                }
+              };
+              setSocialData(newSocialData);
+              
+              await sendDataToServer(newSocialData);
+            } else {
+              console.error("Invalid data structure received from Instagram API", data);
+            }
+          } catch (error) {
+            console.error("Error fetching Instagram data:", error);
+          }
         }
       }
     };
 
-    if (connectedAccounts.length > 0) {
+    if (connectedAccounts.length > 0 && Object.keys(accessTokens).length > 0) {
       fetchSocialData();
     }
   }, [connectedAccounts, accessTokens]);
+
+  const sendDataToServer = async (data) => {
+    try {
+      const response = await fetch('/api/save-social-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      console.log('Data sent to server successfully');
+    } catch (error) {
+      console.error("Error sending data to server:", error);
+    }
+  };
 
   const handleAddAccount = async (account) => {
     if (account === 'Instagram' && !connectedAccounts.find(acc => acc.name === 'Instagram')) {
@@ -88,19 +138,34 @@ export default function Dashboard() {
       const data = await response.json();
       const accessToken = data.accessToken;
 
-      const mediaResponse = await fetch(`https://graph.instagram.com/me/media?fields=id,caption,media_type,media_url,timestamp&access_token=${accessToken}`);
-      const mediaData = await mediaResponse.json();
-      
-      setSocialData(prev => ({ ...prev, Instagram: mediaData.data }));
-      setAccessTokens(prev => ({ ...prev, Instagram: accessToken }));
-      localStorage.setItem('accessTokens', JSON.stringify({ ...accessTokens, Instagram: accessToken }));
-      
-      const userResponse = await fetch(`https://graph.instagram.com/me?fields=username&access_token=${accessToken}`);
+      const userResponse = await fetch(`https://graph.instagram.com/me?fields=id,username,media{id,caption,media_type,media_url,timestamp}&access_token=${accessToken}`);
       const userData = await userResponse.json();
-      const newConnectedAccounts = connectedAccounts.filter(acc => acc.name !== 'Instagram');
-      newConnectedAccounts.push({ name: 'Instagram', username: userData.username });
-      setConnectedAccounts(newConnectedAccounts);
-      localStorage.setItem('connectedAccounts', JSON.stringify(newConnectedAccounts));
+      
+      if (userData && userData.username) {
+        const newSocialData = {
+          ...socialData,
+          Instagram: {
+            username: userData.username,
+            posts: userData.media?.data || [],
+            bio: userData.biography || ''
+          }
+        };
+        setSocialData(newSocialData);
+        setAccessTokens(prev => ({ ...prev, Instagram: accessToken }));
+        localStorage.setItem('accessTokens', JSON.stringify({ ...accessTokens, Instagram: accessToken }));
+        
+        const newConnectedAccounts = connectedAccounts.filter(acc => acc.name !== 'Instagram');
+        newConnectedAccounts.push({ name: 'Instagram', username: userData.username });
+        setConnectedAccounts(newConnectedAccounts);
+        localStorage.setItem('connectedAccounts', JSON.stringify(newConnectedAccounts));
+
+        await sendDataToServer(newSocialData);
+
+        // Clear the URL parameters after successful authentication
+        window.history.replaceState({}, document.title, "/dashboard");
+      } else {
+        console.error("Invalid user data received from Instagram API", userData);
+      }
     } catch (error) {
       console.error("Error exchanging code for token:", error);
     }
@@ -116,7 +181,7 @@ export default function Dashboard() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message: question,
-            socialData: { Instagram: [post] },
+            socialData: { Instagram: { posts: [post], username: socialData.Instagram?.username, bio: socialData.Instagram?.bio } },
           }),
         });
 
@@ -143,24 +208,27 @@ export default function Dashboard() {
         socialData,
       };
   
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        });
   
-      if (!response.ok) {
-        console.error("Error in API call:", response.statusText);
-        return;
-      }
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
   
-      const data = await response.json();
-      
-      if (data.response) {
-        setChat(prev => [...prev, { text: message, sender: 'user' }, { text: data.response, sender: 'ai' }]);
-        setMessage('');
-      } else {
-        console.error("No response from AI.");
+        const data = await response.json();
+        
+        if (data.response) {
+          setChat(prev => [...prev, { text: message, sender: 'user' }, { text: data.response, sender: 'ai' }]);
+          setMessage('');
+        } else {
+          console.error("No response from AI.");
+        }
+      } catch (error) {
+        console.error("Error in API call:", error);
       }
     }
   };
@@ -215,7 +283,7 @@ export default function Dashboard() {
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         <div className="flex-1 p-6 overflow-y-auto space-y-4">
-          {socialData.Instagram && socialData.Instagram.map(post => (
+          {socialData.Instagram && socialData.Instagram.posts && socialData.Instagram.posts.map(post => (
             <div key={post.id} className="bg-gray-800 p-4 rounded-lg shadow-md">
               <img src={post.media_url} alt={post.caption} className="w-full h-auto rounded-lg" />
               <p className="mt-2 text-gray-300">{post.caption}</p>
