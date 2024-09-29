@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaFacebook, FaInstagram, FaLinkedin, FaPlus, FaPaperPlane, FaTimes } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaLinkedin, FaPlus, FaPaperPlane, FaTimes, FaEye } from 'react-icons/fa';
 
 const socialIcons = {
   Facebook: FaFacebook,
@@ -19,6 +19,8 @@ export default function Dashboard() {
   const [accessTokens, setAccessTokens] = useState({});
   const [hoveredAccount, setHoveredAccount] = useState(null);
   const [selectedAccount, setSelectedAccount] = useState(null);
+  const [showPosts, setShowPosts] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   
   useEffect(() => {
     const loadAccessTokens = () => {
@@ -268,6 +270,8 @@ export default function Dashboard() {
     
     if (message.trim()) {
       setChat(prev => [...prev, { text: message, sender: 'user' }]);
+      setMessage('');
+      setIsTyping(true);
       
       const requestBody = {
         message,
@@ -288,17 +292,20 @@ export default function Dashboard() {
         const data = await response.json();
         
         if (data.response) {
-          setChat(prev => [...prev, { text: data.response, sender: 'ai' }]);
+          setTimeout(() => {
+            setChat(prev => [...prev, { text: data.response, sender: 'ai' }]);
+            setIsTyping(false);
+          }, 1000);
         } else {
           console.error("No response from AI.");
           setChat(prev => [...prev, { text: "I'm sorry, I couldn't process that request.", sender: 'ai' }]);
+          setIsTyping(false);
         }
       } catch (error) {
         console.error("Error in API call:", error);
         setChat(prev => [...prev, { text: "Sorry, there was an error processing your request.", sender: 'ai' }]);
+        setIsTyping(false);
       }
-      
-      setMessage('');
     }
   };
 
@@ -309,6 +316,17 @@ export default function Dashboard() {
       return socialData.Facebook;
     }
     return null;
+  };
+
+  const getAllPosts = () => {
+    let allPosts = [];
+    if (socialData.Instagram) {
+      allPosts = [...allPosts, ...socialData.Instagram.posts];
+    }
+    if (socialData.Facebook) {
+      allPosts = [...allPosts, ...socialData.Facebook.posts];
+    }
+    return allPosts.sort((a, b) => new Date(b.created_time || b.timestamp) - new Date(a.created_time || a.timestamp));
   };
 
   return (
@@ -380,6 +398,13 @@ export default function Dashboard() {
                 </span>
               </div>
             ))}
+            {isTyping && (
+              <div className="flex items-center space-x-2 text-gray-400">
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+              </div>
+            )}
           </div>
 
           <form onSubmit={handleSubmit} className="p-4 bg-gray-800 shadow-lg">
@@ -399,6 +424,13 @@ export default function Dashboard() {
           </form>
         </main>
       </div>
+
+      <button
+        onClick={() => setShowPosts(true)}
+        className="fixed bottom-4 left-4 bg-indigo-600 text-white p-3 rounded-full shadow-lg hover:bg-indigo-700 transition-colors"
+      >
+        <FaEye className="text-xl" />
+      </button>
 
       <AnimatePresence>
         {selectedAccount && (
@@ -474,6 +506,45 @@ export default function Dashboard() {
               ) : (
                 <p className="text-gray-400">No data available for this account.</p>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+
+        {showPosts && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            onClick={() => setShowPosts(false)}
+          >
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 50, opacity: 0 }}
+              className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-3xl w-full m-4 max-h-[80vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-indigo-400">Your Posts</h2>
+                <button onClick={() => setShowPosts(false)} className="text-gray-400 hover:text-white">
+                  <FaTimes />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                {getAllPosts().map((post, index) => (
+                  <div key={index} className="bg-gray-700 p-4 rounded-lg">
+                    {post.media_url && (
+                      <img src={post.media_url} alt="Post" className="w-full h-48 object-cover rounded-lg mb-2" />
+                    )}
+                    <p className="text-gray-300">{post.caption || post.message}</p>
+                    <p className="text-gray-400 text-sm mt-2">
+                      {new Date(post.created_time || post.timestamp).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </motion.div>
           </motion.div>
         )}
